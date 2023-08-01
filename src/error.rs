@@ -7,4 +7,7 @@ pub enum LockError {
 
 	#[error("lock failed")]
 	LockFailed,
+
+	#[error("lock released")]
+	LockReleased,
 }
