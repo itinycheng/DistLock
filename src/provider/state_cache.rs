@@ -12,6 +12,6 @@ pub fn set_state(state: LockState) {
 
 pub fn get_state() -> Option<LockState> {
 	#[cfg(feature = "tokio")]
-	let value = LOCK_STATE.try_with(|e| *e).ok();
+	let value = LOCK_STATE.try_with(|e| e.clone()).ok();
 	value
 }
