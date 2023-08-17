@@ -5,13 +5,7 @@ tokio::task_local! {
 	static LOCK_STATE: LockState;
 }
 
+#[cfg(feature = "tokio")]
 pub fn set_state(state: LockState) {
-	#[cfg(feature = "tokio")]
 	LOCK_STATE.sync_scope(state, || {});
-}
-
-pub fn get_state() -> Option<LockState> {
-	#[cfg(feature = "tokio")]
-	let value = LOCK_STATE.try_with(|e| e.clone()).ok();
-	value
 }

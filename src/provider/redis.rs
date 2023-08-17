@@ -1,10 +1,8 @@
-use async_trait::async_trait;
 use chrono::Duration;
 use chrono::Utc;
 
 use gethostname::gethostname;
 
-use redis::Client;
 use redis::Cmd;
 use redis::Value;
 
@@ -71,29 +69,52 @@ impl<'a, T> RedisDriver<'a, T> {
 	}
 }
 
-#[async_trait]
-impl<'a> Lockable for RedisDriver<'a, Client> {
-	async fn acquire_lock(&self, config: &LockConfig) -> LockResult<LockState> {
-		let mut conn = self.transport.get_async_connection().await?;
-		let cmd = self.acquire_cmd(config);
-		let value: Value = cmd.query_async(&mut conn).await?;
+macro_rules! impl_lockable_redis {
+	($client:ty,
+		$conn_fn_name: ident,
+		$query_fn_name: ident,
+		$($async: ident)?,
+		$($await: tt)*
+	) => {
+		#[cfg_attr(any(feature = "tokio", feature = "async-std"), async_trait::async_trait)]
+		impl<'a> Lockable for RedisDriver<'a, $client> {
+			$($async)? fn acquire_lock(&self, config: &LockConfig) -> LockResult<LockState> {
+				let mut conn = self.transport.$conn_fn_name()$($await)*?;
+				let cmd = self.acquire_cmd(config);
+				let value: Value = cmd.$query_fn_name(&mut conn)$($await)*?;
 
-		Ok(LockState::new(matches!(value, Value::Okay), Utc::now()))
-	}
+				Ok(LockState::new(matches!(value, Value::Okay), Utc::now()))
+			}
 
-	async fn release_lock(&self, config: &LockConfig, state: &LockState) -> LockResult<LockState> {
-		let elapsed = Utc::now() - state.locked_at;
-		let remaining = config.min_lock - elapsed;
-		let mut conn = self.transport.get_async_connection().await?;
-		let cmd = self.release_cmd(config, remaining);
-		cmd.query_async(&mut conn).await?;
-		Ok(LockState::new(false, Utc::now()))
-	}
+			$($async)? fn release_lock(
+				&self,
+				config: &LockConfig,
+				state: &LockState,
+			) -> LockResult<LockState> {
+				let elapsed = Utc::now() - state.locked_at;
+				let remaining = config.min_lock - elapsed;
+				let mut conn = self.transport.$conn_fn_name()$($await)*?;
+				let cmd = self.release_cmd(config, remaining);
+				cmd.$query_fn_name(&mut conn)$($await)*?;
+				Ok(LockState::new(false, Utc::now()))
+			}
 
-	async fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState> {
-		let mut conn = self.transport.get_async_connection().await?;
-		let cmd = self.extend_cmd(config);
-		let value: Value = cmd.query_async(&mut conn).await?;
-		Ok(LockState::new(matches!(value, Value::Okay), Utc::now()))
+			$($async)? fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState> {
+				let mut conn = self.transport.$conn_fn_name()$($await)*?;
+				let cmd = self.extend_cmd(config);
+				let value: Value = cmd.$query_fn_name(&mut conn)$($await)*?;
+				Ok(LockState::new(matches!(value, Value::Okay), Utc::now()))
+			}
+		}
 	}
 }
+
+#[cfg(any(feature = "tokio", feature = "async-std"))]
+impl_lockable_redis!(::redis::cluster::ClusterClient, get_async_connection, query_async, async, .await);
+#[cfg(any(feature = "tokio", feature = "async-std"))]
+impl_lockable_redis!(::redis::Client, get_async_connection, query_async, async, .await);
+
+#[cfg(not(any(feature = "tokio", feature = "async-std")))]
+impl_lockable_redis!(::redis::Client, get_connection, query,,);
+#[cfg(not(any(feature = "tokio", feature = "async-std")))]
+impl_lockable_redis!(::redis::cluster::ClusterClient, get_connection, query,,);

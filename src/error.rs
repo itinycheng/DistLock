@@ -2,6 +2,7 @@ pub type LockResult<T> = core::result::Result<T, crate::error::LockError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LockError {
+	#[cfg(feature = "redis")]
 	#[error("Redis error: {0}")]
 	RedisError(#[from] redis::RedisError),
 
