@@ -3,6 +3,8 @@ use chrono::Utc;
 
 use gethostname::gethostname;
 
+use r2d2::Pool;
+use redis::Client;
 use redis::Cmd;
 use redis::Value;
 
@@ -118,3 +120,8 @@ impl_lockable_redis!(::redis::Client, get_async_connection, query_async, async, 
 impl_lockable_redis!(::redis::Client, get_connection, query,,);
 #[cfg(not(any(feature = "tokio", feature = "async-std")))]
 impl_lockable_redis!(::redis::cluster::ClusterClient, get_connection, query,,);
+
+#[cfg(feature = "r2d2")]
+impl_lockable_redis!(::r2d2::Pool<::redis::cluster::ClusterClient> , get, query,,);
+#[cfg(feature = "r2d2")]
+impl_lockable_redis!(::r2d2::Pool<::redis::Client> , get, query,,);

@@ -59,8 +59,7 @@ macro_rules! impl_dist_lock {
 	};
 }
 
-#[cfg(not(feature = "tokio"))]
-#[cfg(not(feature = "async-std"))]
+#[cfg(not(any(feature = "tokio", feature = "async-std")))]
 impl_dist_lock!(,);
 
 #[cfg(any(feature = "tokio", feature = "async-std"))]
