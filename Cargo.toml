@@ -20,13 +20,21 @@ futures = { version = "0.3.28", optional = true }
 r2d2 = { version = "0.8.10", optional = true }
 
 [features]
-default = ["redis_r2d2_provider"]
+default = ["redis_provider"]
 redis_provider = ["redis/cluster"]
-redis_r2d2_provider = ["redis/cluster", "redis/r2d2", "r2d2"]
+redis_r2d2_provider = ["redis_provider", "redis/r2d2", "r2d2"]
 redis_tokio_provider = [
     "redis/tokio-comp",
     "redis/cluster-async",
     "tokio",
+    "futures",
+    "async-trait",
+]
+
+redis_async_std_provider = [
+    "redis/async-std-comp",
+    "redis/cluster-async",
+    "async-std",
     "futures",
     "async-trait",
 ]

@@ -3,8 +3,6 @@ use chrono::Utc;
 
 use gethostname::gethostname;
 
-use r2d2::Pool;
-use redis::Client;
 use redis::Cmd;
 use redis::Value;
 
