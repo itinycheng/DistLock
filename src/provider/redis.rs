@@ -1,9 +1,7 @@
-use chrono::Duration;
 use chrono::Utc;
 
 use gethostname::gethostname;
 
-use redis::Cmd;
 use redis::Value;
 
 use crate::core::LockConfig;
@@ -24,48 +22,9 @@ impl<'a, T> RedisDriver<'a, T> {
 		RedisDriver { key: format!("{}:{}", KEY_PREFIX, lock_name), transport }
 	}
 
-	#[inline]
-	pub fn build_value() -> String {
+	#[inline(always)]
+	fn build_value() -> String {
 		format!("{},{}", Utc::now().timestamp_millis(), gethostname().to_string_lossy())
-	}
-
-	#[inline]
-	pub fn acquire_cmd(&self, config: &LockConfig) -> Cmd {
-		let mut cmd = redis::cmd("SET");
-		cmd.arg(&self.key)
-			.arg(Self::build_value())
-			.arg("NX")
-			.arg("PX")
-			.arg(config.max_lock.num_milliseconds() as usize);
-		cmd
-	}
-
-	#[inline]
-	pub fn release_cmd(&self, config: &LockConfig, remaining: Duration) -> Cmd {
-		let mut cmd;
-		if remaining.num_milliseconds() > 0 {
-			cmd = redis::cmd("SET");
-			cmd.arg(&self.key)
-				.arg(Self::build_value())
-				.arg("XX")
-				.arg("PX")
-				.arg((config.min_lock - remaining).num_milliseconds());
-		} else {
-			cmd = redis::cmd("DEL");
-			cmd.arg(&self.key);
-		};
-		cmd
-	}
-
-	#[inline]
-	pub fn extend_cmd(&self, config: &LockConfig) -> Cmd {
-		let mut cmd = redis::cmd("SET");
-		cmd.arg(&self.key)
-			.arg(Self::build_value())
-			.arg("XX")
-			.arg("PX")
-			.arg(config.max_lock.num_milliseconds() as usize);
-		cmd
 	}
 }
 
@@ -78,31 +37,49 @@ macro_rules! impl_lockable_redis {
 	) => {
 		#[cfg_attr(any(feature = "tokio", feature = "async-std"), async_trait::async_trait)]
 		impl<'a> Lockable for RedisDriver<'a, $client> {
-			$($async)? fn acquire_lock(&self, config: &LockConfig) -> LockResult<LockState> {
+			$($async)? fn acquire_lock(&mut self, config: &LockConfig) -> LockResult<LockState> {
 				let mut conn = self.transport.$conn_fn_name()$($await)*?;
-				let cmd = self.acquire_cmd(config);
-				let value: Value = cmd.$query_fn_name(&mut conn)$($await)*?;
-
+				let value: Value = redis::cmd("SET")
+					.arg(&self.key)
+					.arg(Self::build_value())
+					.arg("NX")
+					.arg("PX")
+					.arg(config.max_lock.num_milliseconds() as usize)
+					.$query_fn_name(&mut conn)$($await)*?;
 				Ok(LockState::new(matches!(value, Value::Okay), Utc::now()))
 			}
 
 			$($async)? fn release_lock(
-				&self,
+				&mut self,
 				config: &LockConfig,
 				state: &LockState,
 			) -> LockResult<LockState> {
-				let elapsed = Utc::now() - state.locked_at;
-				let remaining = config.min_lock - elapsed;
+				let until = config.lock_at_least_until(state.locked_at);
 				let mut conn = self.transport.$conn_fn_name()$($await)*?;
-				let cmd = self.release_cmd(config, remaining);
-				cmd.$query_fn_name(&mut conn)$($await)*?;
+				let remaining = (until - Utc::now()).num_milliseconds();
+				if remaining > 0 {
+					redis::cmd("SET")
+						.arg(&self.key)
+						.arg(Self::build_value())
+						.arg("XX")
+						.arg("PX")
+						.arg(remaining)
+						.$query_fn_name(&mut conn)$($await)*?;
+				} else {
+					redis::cmd("DEL").arg(&self.key).$query_fn_name(&mut conn)$($await)*?;
+				}
 				Ok(LockState::new(false, Utc::now()))
 			}
 
-			$($async)? fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState> {
+			$($async)? fn extend_lock(&mut self, config: &LockConfig) -> LockResult<LockState> {
 				let mut conn = self.transport.$conn_fn_name()$($await)*?;
-				let cmd = self.extend_cmd(config);
-				let value: Value = cmd.$query_fn_name(&mut conn)$($await)*?;
+				let value: Value = redis::cmd("SET")
+					.arg(&self.key)
+					.arg(Self::build_value())
+					.arg("XX")
+					.arg("PX")
+					.arg(config.max_lock.num_milliseconds() as usize)
+					.$query_fn_name(&mut conn)$($await)*?;
 				Ok(LockState::new(matches!(value, Value::Okay), Utc::now()))
 			}
 		}
