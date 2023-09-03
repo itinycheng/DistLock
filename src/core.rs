@@ -88,6 +88,16 @@ impl LockConfig {
 	pub fn max_lock(&self) -> &Duration {
 		&self.max_lock
 	}
+
+	pub fn lock_at_least_until(&self, locked_at: DateTime<Utc>) -> DateTime<Utc> {
+		let now = Utc::now();
+		let min_lock_until = locked_at + self.min_lock;
+		if min_lock_until > now {
+			min_lock_until
+		} else {
+			now
+		}
+	}
 }
 
 #[derive(Debug, Default, Clone)]
@@ -114,15 +124,15 @@ macro_rules! impl_lockable {
 	($($async: ident)?) => {
 		#[cfg_attr(any(feature = "tokio", feature = "async-std"), async_trait::async_trait)]
 		pub trait Lockable {
-			$($async)? fn acquire_lock(&self, config: &LockConfig) -> LockResult<LockState>;
+			$($async)? fn acquire_lock(&mut self, config: &LockConfig) -> LockResult<LockState>;
 
 			$($async)? fn release_lock(
-				&self,
+				&mut self,
 				config: &LockConfig,
 				state: &LockState,
 			) -> LockResult<LockState>;
 
-			$($async)? fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState>;
+			$($async)? fn extend_lock(&mut self, config: &LockConfig) -> LockResult<LockState>;
 		}
 	};
 }
