@@ -21,7 +21,7 @@ futures = { version = "0.3.28", optional = true }
 r2d2 = { version = "0.8.10", optional = true }
 
 [features]
-default = ["diesel_provider"]
+default = ["diesel_mysql_r2d2"]
 
 # redis
 redis_provider = ["redis/cluster"]
@@ -42,4 +42,9 @@ redis_async_std_provider = [
 ]
 
 # diesel
-diesel_provider = ["diesel/mysql"]
+diesel_sqlite = ["diesel/sqlite"]
+diesel_postgres = ["diesel/postgres"]
+diesel_mysql = ["diesel/mysql"]
+diesel_sqlite_r2d2 = ["diesel_sqlite", "diesel/r2d2", "r2d2"]
+diesel_postgres_r2d2 = ["diesel_postgres", "diesel/r2d2", "r2d2"]
+diesel_mysql_r2d2 = ["diesel_mysql", "diesel/r2d2", "r2d2"]
