@@ -12,6 +12,11 @@ use crate::core::LockState;
 use crate::core::Lockable;
 use crate::error::LockResult;
 
+use super::help::sql_stmt::extend_lock_sql;
+use super::help::sql_stmt::insert_lock_sql;
+use super::help::sql_stmt::release_lock_sql;
+use super::help::sql_stmt::update_lock_sql;
+
 const LOCK_TABLE: &'static str = "dist_lock";
 
 diesel::table! {
@@ -80,10 +85,7 @@ macro_rules! impl_lockable_diesel {
 				let now = Utc::now();
 				let until = now + config.max_lock;
 
-				let mut locked = match diesel::sql_query(format!(
-					"INSERT INTO {} (name, lock_until, locked_at, locked_by) VALUES (?, ?, ?, ?)",
-					&$self.table
-				))
+				let mut locked = match diesel::sql_query(insert_lock_sql(&$self.table))
 				.bind::<VarChar, _>(&config.name)
 				.bind::<BigInt, _>(until.timestamp_millis())
 				.bind::<BigInt, _>(now.timestamp_millis())
@@ -95,9 +97,7 @@ macro_rules! impl_lockable_diesel {
 				};
 
 				if !locked {
-					locked = diesel::sql_query(format!(
-						"UPDATE {} SET lock_until = ?, locked_at = ?, locked_by = ? WHERE name = ? AND lock_until <= ?",
-					 &$self.table))
+					locked = diesel::sql_query(update_lock_sql(&$self.table))
 						.bind::<BigInt, _>(until.timestamp_millis())
 						.bind::<BigInt, _>(now.timestamp_millis())
 						.bind::<VarChar, _>(gethostname().to_string_lossy())
@@ -111,7 +111,7 @@ macro_rules! impl_lockable_diesel {
 
 			fn release_lock(&mut $self, config: &LockConfig, state: &LockState) -> LockResult<LockState> {
 				let lock_until = config.lock_at_least_until(state.locked_at);
-				diesel::sql_query(format!("UPDATE {} SET lock_until = ? WHERE name = ?", &$self.table))
+				diesel::sql_query(release_lock_sql(&$self.table))
 					.bind::<BigInt, _>(lock_until.timestamp_millis())
 					.bind::<VarChar, _>(&$self.name)
 					.execute($conn)?;
@@ -121,10 +121,7 @@ macro_rules! impl_lockable_diesel {
 			fn extend_lock(&mut $self, config: &LockConfig) -> LockResult<LockState> {
 				let now = Utc::now();
 				let until = now + config.max_lock;
-				let count = diesel::sql_query(format!(
-					"UPDATE {} SET lock_until = ? WHERE name = ? AND locked_by = ? AND lock_until > ?",
-					&$self.table
-				))
+				let count = diesel::sql_query(extend_lock_sql(&$self.table))
 				.bind::<BigInt, _>(until.timestamp_millis())
 				.bind::<VarChar, _>(&$self.name)
 				.bind::<VarChar, _>(gethostname().to_string_lossy())

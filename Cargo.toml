@@ -12,6 +12,7 @@ edition = "2021"
 chrono = "0.4.26"
 thiserror = "1.0.44"
 gethostname = "0.4.3"
+cfg-if = "1.0.0"
 redis = { version = "0.23.0", optional = true }
 diesel = { version = "2.1.0", features = ["chrono"], optional = true }
 tokio = { version = "1.29.1", features = ["macros"], optional = true }
