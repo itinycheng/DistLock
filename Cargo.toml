@@ -7,12 +7,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
+members = [".", "codegen"]
 
 [dependencies]
 chrono = "0.4.26"
 thiserror = "1.0.44"
 gethostname = "0.4.3"
 cfg-if = "1.0.0"
+dist_lock_codegen = { path = "./codegen", version = "*", optional = true }
 redis = { version = "0.23.0", optional = true }
 diesel = { version = "2.1.0", features = ["chrono"], optional = true }
 tokio = { version = "1.29.1", features = ["macros"], optional = true }
@@ -22,17 +24,18 @@ futures = { version = "0.3.28", optional = true }
 r2d2 = { version = "0.8.10", optional = true }
 
 [features]
-default = ["diesel_mysql_r2d2"]
+default = ["diesel_sqlite"]
 
 # redis
-redis_provider = ["redis/cluster"]
-redis_r2d2_provider = ["redis_provider", "redis/r2d2", "r2d2"]
+redis_provider = ["redis/cluster", "dist_lock_codegen/redis"]
+redis_r2d2_provider = ["redis_provider", "redis/r2d2", "r2d2", "dist_lock_codegen/redis"]
 redis_tokio_provider = [
     "redis/tokio-comp",
     "redis/cluster-async",
     "tokio",
     "futures",
     "async-trait",
+    "dist_lock_codegen/redis"
 ]
 redis_async_std_provider = [
     "redis/async-std-comp",
@@ -40,12 +43,13 @@ redis_async_std_provider = [
     "async-std",
     "futures",
     "async-trait",
+    "dist_lock_codegen/redis"
 ]
 
 # diesel
-diesel_sqlite = ["diesel/sqlite"]
-diesel_postgres = ["diesel/postgres"]
-diesel_mysql = ["diesel/mysql"]
-diesel_sqlite_r2d2 = ["diesel_sqlite", "diesel/r2d2", "r2d2"]
-diesel_postgres_r2d2 = ["diesel_postgres", "diesel/r2d2", "r2d2"]
-diesel_mysql_r2d2 = ["diesel_mysql", "diesel/r2d2", "r2d2"]
+diesel_sqlite = ["diesel/sqlite", "dist_lock_codegen/diesel"]
+diesel_postgres = ["diesel/postgres", "dist_lock_codegen/diesel"]
+diesel_mysql = ["diesel/mysql", "dist_lock_codegen/diesel"]
+diesel_sqlite_r2d2 = ["diesel_sqlite", "diesel/r2d2", "r2d2", "dist_lock_codegen/diesel"]
+diesel_postgres_r2d2 = ["diesel_postgres", "diesel/r2d2", "r2d2", "dist_lock_codegen/diesel"]
+diesel_mysql_r2d2 = ["diesel_mysql", "diesel/r2d2", "r2d2", "dist_lock_codegen/diesel"]

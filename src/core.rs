@@ -77,6 +77,10 @@ impl LockConfig {
 		LockConfig { name, min_lock, max_lock }
 	}
 
+	pub fn from_mills(name: String, min_lock: i64, max_lock: i64) -> LockConfig {
+		Self::new(name, Duration::milliseconds(min_lock), Duration::milliseconds(max_lock))
+	}
+
 	pub fn name(&self) -> &String {
 		&self.name
 	}

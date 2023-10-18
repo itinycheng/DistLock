@@ -3,7 +3,6 @@ use std::fmt::Display;
 use chrono::Utc;
 use diesel::sql_types::BigInt;
 use diesel::sql_types::VarChar;
-use diesel::QueryableByName;
 use diesel::RunQueryDsl;
 use gethostname::gethostname;
 
@@ -18,26 +17,6 @@ use super::help::sql_stmt::release_lock_sql;
 use super::help::sql_stmt::update_lock_sql;
 
 const LOCK_TABLE: &'static str = "dist_lock";
-
-diesel::table! {
-	dist_lock (name) {
-		#[max_length = 64]
-		name -> Varchar,
-		lock_until -> Bigint,
-		locked_at -> Bigint,
-		#[max_length = 255]
-		locked_by -> Varchar,
-	}
-}
-
-#[derive(QueryableByName)]
-#[diesel(table_name = crate::provider::diesel::dist_lock)]
-pub struct LockRecord {
-	pub name: String,
-	pub lock_until: i64,
-	pub locked_at: i64,
-	pub locked_by: String,
-}
 
 #[derive(Debug)]
 pub struct DieselDriver<T> {
