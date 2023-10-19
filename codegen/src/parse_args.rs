@@ -1,7 +1,7 @@
 use proc_macro2::Span;
 use syn::parenthesized;
 use syn::parse::Parse;
-use syn::ExprCall;
+use syn::Expr;
 use syn::LitStr;
 use syn::Token;
 
@@ -9,7 +9,7 @@ pub(crate) struct DistLockArgs {
 	pub(crate) name: LitStr,
 	pub(crate) at_most: LitStr,
 	pub(crate) at_least: Option<LitStr>,
-	pub(crate) connection: ExprCall,
+	pub(crate) transport: Expr,
 }
 
 impl Parse for DistLockArgs {
@@ -17,7 +17,7 @@ impl Parse for DistLockArgs {
 		let mut name = None;
 		let mut at_least = None;
 		let mut at_most = None;
-		let mut connection = None;
+		let mut transport = None;
 		while !input.is_empty() {
 			let lookahead = input.lookahead1();
 			if lookahead.peek(kw::name) {
@@ -32,11 +32,11 @@ impl Parse for DistLockArgs {
 				_ = input.parse::<kw::at_least>()?;
 				_ = input.parse::<Token![=]>()?;
 				at_least = Some(input.parse::<LitStr>()?);
-			} else if lookahead.peek(kw::connection) {
-				_ = input.parse::<kw::connection>()?;
+			} else if lookahead.peek(kw::transport) {
+				_ = input.parse::<kw::transport>()?;
 				let content;
 				parenthesized!(content in input);
-				connection = Some(content.parse::<ExprCall>()?);
+				transport = Some(content.parse::<Expr>()?);
 			} else if lookahead.peek(Token![,]) {
 				_ = input.parse::<Token![,]>()?;
 			} else {
@@ -48,8 +48,8 @@ impl Parse for DistLockArgs {
 			name: name.ok_or(syn::Error::new(Span::call_site(), "lock name not found"))?,
 			at_most: at_most.ok_or(syn::Error::new(Span::call_site(), "at_most not found"))?,
 			at_least,
-			connection: connection
-				.ok_or(syn::Error::new(Span::call_site(), "connection not found"))?,
+			transport: transport
+				.ok_or(syn::Error::new(Span::call_site(), "transport not found"))?,
 		})
 	}
 }
@@ -60,5 +60,5 @@ mod kw {
 	custom_keyword!(name);
 	custom_keyword!(at_least);
 	custom_keyword!(at_most);
-	custom_keyword!(connection);
+	custom_keyword!(transport);
 }

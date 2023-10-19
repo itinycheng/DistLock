@@ -4,3 +4,9 @@ pub mod diesel;
 pub mod redis;
 
 mod help;
+
+#[cfg(feature = "diesel")]
+pub use diesel::DieselDriver;
+
+#[cfg(feature = "redis")]
+pub use redis::RedisDriver;
