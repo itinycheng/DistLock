@@ -12,7 +12,9 @@ proc-macro2 = "1.0.69"
 quote = "1.0.33"
 syn = { version = "2.0.38", features = ["full"] }
 humantime = "2.1.0"
+cfg-if = "1.0.0"
 
 [features]
 redis = []
 diesel = []
+async=[]

@@ -35,7 +35,8 @@ redis_tokio_provider = [
     "tokio",
     "futures",
     "async-trait",
-    "dist_lock_codegen/redis"
+    "dist_lock_codegen/redis",
+    "dist_lock_codegen/async",
 ]
 redis_async_std_provider = [
     "redis/async-std-comp",
@@ -43,7 +44,8 @@ redis_async_std_provider = [
     "async-std",
     "futures",
     "async-trait",
-    "dist_lock_codegen/redis"
+    "dist_lock_codegen/redis",
+    "dist_lock_codegen/async",
 ]
 
 # diesel
