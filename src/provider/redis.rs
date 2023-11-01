@@ -37,7 +37,7 @@ macro_rules! impl_lockable_redis {
 	) => {
 		#[cfg_attr(any(feature = "tokio", feature = "async-std"), async_trait::async_trait)]
 		impl<'a> Lockable for RedisDriver<'a, $client> {
-			$($async)? fn acquire_lock(&mut self, config: &LockConfig) -> LockResult<LockState> {
+			$($async)? fn acquire_lock(&self, config: &LockConfig) -> LockResult<LockState> {
 				let mut conn = self.transport.$conn_fn_name()$($await)*?;
 				let value: Value = redis::cmd("SET")
 					.arg(&self.key)
@@ -50,7 +50,7 @@ macro_rules! impl_lockable_redis {
 			}
 
 			$($async)? fn release_lock(
-				&mut self,
+				&self,
 				config: &LockConfig,
 				state: &LockState,
 			) -> LockResult<LockState> {
@@ -71,7 +71,7 @@ macro_rules! impl_lockable_redis {
 				Ok(LockState::new(false, Utc::now()))
 			}
 
-			$($async)? fn extend_lock(&mut self, config: &LockConfig) -> LockResult<LockState> {
+			$($async)? fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState> {
 				let mut conn = self.transport.$conn_fn_name()$($await)*?;
 				let value: Value = redis::cmd("SET")
 					.arg(&self.key)

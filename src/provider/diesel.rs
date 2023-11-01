@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::fmt::Display;
 
 use chrono::Utc;
@@ -16,13 +17,13 @@ use super::help::sql_stmt::insert_lock_sql;
 use super::help::sql_stmt::release_lock_sql;
 use super::help::sql_stmt::update_lock_sql;
 
-const LOCK_TABLE: &'static str = "dist_lock";
+const LOCK_TABLE: &str = "dist_lock";
 
 #[derive(Debug)]
 pub struct DieselDriver<T> {
 	name: String,
 	table: String,
-	transport: T,
+	transport: RefCell<T>,
 }
 
 impl<T> DieselDriver<T> {
@@ -36,7 +37,7 @@ impl<T> DieselDriver<T> {
 				Some(prefix) => format!("{}_{}", prefix, LOCK_TABLE),
 				None => LOCK_TABLE.to_owned(),
 			},
-			transport,
+			transport: RefCell::new(transport),
 		}
 	}
 
@@ -48,7 +49,7 @@ impl<T> DieselDriver<T> {
 		&self.table
 	}
 
-	pub fn transport(&self) -> &T {
+	pub fn transport(&self) -> &RefCell<T> {
 		&self.transport
 	}
 }
@@ -60,7 +61,7 @@ macro_rules! impl_lockable_diesel {
 		$conn: expr
 	) => {
 		impl Lockable for DieselDriver<$client> {
-			fn acquire_lock(&mut $self, config: &LockConfig) -> LockResult<LockState> {
+			fn acquire_lock(&$self, config: &LockConfig) -> LockResult<LockState> {
 				let now = Utc::now();
 				let until = now + config.max_lock;
 
@@ -88,7 +89,7 @@ macro_rules! impl_lockable_diesel {
 				Ok(LockState::new(locked, Utc::now()))
 			}
 
-			fn release_lock(&mut $self, config: &LockConfig, state: &LockState) -> LockResult<LockState> {
+			fn release_lock(&$self, config: &LockConfig, state: &LockState) -> LockResult<LockState> {
 				let lock_until = config.lock_at_least_until(state.locked_at);
 				diesel::sql_query(release_lock_sql(&$self.table))
 					.bind::<BigInt, _>(lock_until.timestamp_millis())
@@ -97,7 +98,7 @@ macro_rules! impl_lockable_diesel {
 				Ok(LockState::new(false, Utc::now()))
 			}
 
-			fn extend_lock(&mut $self, config: &LockConfig) -> LockResult<LockState> {
+			fn extend_lock(&$self, config: &LockConfig) -> LockResult<LockState> {
 				let now = Utc::now();
 				let until = now + config.max_lock;
 				let count = diesel::sql_query(extend_lock_sql(&$self.table))
@@ -113,26 +114,26 @@ macro_rules! impl_lockable_diesel {
 }
 
 #[cfg(feature = "diesel_sqlite")]
-impl_lockable_diesel!(::diesel::SqliteConnection, self, &mut self.transport);
+impl_lockable_diesel!(::diesel::SqliteConnection, self, &mut *self.transport.borrow_mut());
 #[cfg(feature = "diesel_postgres")]
-impl_lockable_diesel!(::diesel::PgConnection, self, &mut self.transport);
+impl_lockable_diesel!(::diesel::PgConnection, self, &mut *self.transport.borrow_mut());
 #[cfg(feature = "diesel_mysql")]
-impl_lockable_diesel!(::diesel::MysqlConnection, self, &mut self.transport);
+impl_lockable_diesel!(::diesel::MysqlConnection, self, &mut *self.transport.borrow_mut());
 #[cfg(feature = "diesel_sqlite_r2d2")]
 impl_lockable_diesel!(
 	::r2d2::Pool<::diesel::r2d2::ConnectionManager<::diesel::SqliteConnection>>,
 	self,
-	&mut self.transport.get()?
+	&mut self.transport.borrow().get()?
 );
 #[cfg(feature = "diesel_postgres_r2d2")]
 impl_lockable_diesel!(
 	::r2d2::Pool<::diesel::r2d2::ConnectionManager<::diesel::PgConnection>>,
 	self,
-	&mut self.transport.get()?
+	&mut self.transport.borrow().get()?
 );
 #[cfg(feature = "diesel_mysql_r2d2")]
 impl_lockable_diesel!(
 	::r2d2::Pool<::diesel::r2d2::ConnectionManager<::diesel::MysqlConnection>>,
 	self,
-	&mut self.transport.get()?
+	&mut self.transport.borrow().get()?
 );

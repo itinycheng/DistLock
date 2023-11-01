@@ -32,8 +32,8 @@ mod diesel {
 		let lock_name = "random_lock".to_string();
 		let driver = DieselDriver::new(&lock_name, Some("t"), conn);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
-		check_lock(&mut dist_lock)
+		let dist_lock = DistLock::new(config, driver);
+		check_lock(&dist_lock)
 	}
 
 	#[cfg(feature = "diesel_mysql_r2d2")]
@@ -48,8 +48,8 @@ mod diesel {
 		let lock_name = "random_lock".to_string();
 		let driver = DieselDriver::new(&lock_name, Some("t"), pool);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
-		check_lock(&mut dist_lock)
+		let dist_lock = DistLock::new(config, driver);
+		check_lock(&dist_lock)
 	}
 
 	#[cfg(feature = "diesel_postgres")]
@@ -61,8 +61,8 @@ mod diesel {
 		let lock_name = "random_lock".to_string();
 		let driver = DieselDriver::new(&lock_name, Some("t"), conn);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
-		check_lock(&mut dist_lock)
+		let dist_lock = DistLock::new(config, driver);
+		check_lock(&dist_lock)
 	}
 
 	#[cfg(feature = "diesel_postgres_r2d2")]
@@ -77,8 +77,8 @@ mod diesel {
 		let lock_name = "random_lock".to_string();
 		let driver = DieselDriver::new(&lock_name, Some("t"), pool);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
-		check_lock(&mut dist_lock)
+		let dist_lock = DistLock::new(config, driver);
+		check_lock(&dist_lock)
 	}
 
 	#[cfg(feature = "diesel_sqlite")]
@@ -100,8 +100,8 @@ mod diesel {
 		let lock_name = "random_lock".to_string();
 		let driver = DieselDriver::new(&lock_name, Some("t"), conn);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
-		check_lock(&mut dist_lock)
+		let dist_lock = DistLock::new(config, driver);
+		check_lock(&dist_lock)
 	}
 
 	#[cfg(feature = "diesel_sqlite_r2d2")]
@@ -127,11 +127,11 @@ mod diesel {
 		let lock_name = "random_lock".to_string();
 		let driver = DieselDriver::new(&lock_name, Some("t"), pool);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
-		check_lock(&mut dist_lock)
+		let dist_lock = DistLock::new(config, driver);
+		check_lock(&dist_lock)
 	}
 
-	fn check_lock<T: Lockable>(dist_lock: &mut DistLock<T>) -> LockResult<()> {
+	fn check_lock<T: Lockable>(dist_lock: &DistLock<T>) -> LockResult<()> {
 		let now = Instant::now();
 		assert!(dist_lock.acquire()?);
 		thread::sleep(core::time::Duration::from_secs(5));

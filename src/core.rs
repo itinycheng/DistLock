@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use chrono::DateTime;
 use chrono::Duration;
 use chrono::Utc;
@@ -8,7 +10,7 @@ use crate::error::LockResult;
 pub struct DistLock<T: Lockable> {
 	pub(super) config: LockConfig,
 	pub(super) driver: T,
-	pub(super) state: LockState,
+	pub(super) state: Cell<LockState>,
 	pub(super) create_at: DateTime<Utc>,
 }
 
@@ -30,30 +32,30 @@ macro_rules! impl_dist_lock {
 				&self.config
 			}
 
-			pub fn state(&self) -> &LockState {
-				&self.state
+			pub fn state(&self) -> LockState {
+				self.state.get()
 			}
 
 			pub fn create_at(&self) -> &DateTime<Utc> {
 				&self.create_at
 			}
 
-			pub $($async)? fn acquire(&mut self) -> LockResult<bool> {
+			pub $($async)? fn acquire(&self) -> LockResult<bool> {
 				let state = self.driver.acquire_lock(&self.config)$($await)*?;
-				self.state = state;
-				Ok(self.state.is_locked)
+				self.state.set(state);
+				Ok(state.is_locked)
 			}
 
-			pub $($async)? fn release(&mut self) -> LockResult<()> {
-				let state = self.driver.release_lock(&self.config, &self.state)$($await)*?;
-				self.state = state;
+			pub $($async)? fn release(&self) -> LockResult<()> {
+				let state = self.driver.release_lock(&self.config, &self.state.get())$($await)*?;
+				self.state.set(state);
 				Ok(())
 			}
 
-			pub $($async)? fn extend(&mut self) -> LockResult<bool> {
+			pub $($async)? fn extend(&self) -> LockResult<bool> {
 				let state = self.driver.extend_lock(&self.config)$($await)*?;
-				self.state = state;
-				Ok(self.state.is_locked)
+				self.state.set(state);
+				Ok(state.is_locked)
 			}
 		}
 	};
@@ -104,7 +106,7 @@ impl LockConfig {
 	}
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct LockState {
 	pub(super) is_locked: bool,
 	pub(super) locked_at: DateTime<Utc>,
@@ -128,15 +130,15 @@ macro_rules! impl_lockable {
 	($($async: ident)?) => {
 		#[cfg_attr(any(feature = "tokio", feature = "async-std"), async_trait::async_trait)]
 		pub trait Lockable {
-			$($async)? fn acquire_lock(&mut self, config: &LockConfig) -> LockResult<LockState>;
+			$($async)? fn acquire_lock(&self, config: &LockConfig) -> LockResult<LockState>;
 
 			$($async)? fn release_lock(
-				&mut self,
+				&self,
 				config: &LockConfig,
 				state: &LockState,
 			) -> LockResult<LockState>;
 
-			$($async)? fn extend_lock(&mut self, config: &LockConfig) -> LockResult<LockState>;
+			$($async)? fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState>;
 		}
 	};
 }
@@ -149,7 +151,7 @@ impl_lockable!(async);
 
 impl<T: Lockable> Drop for DistLock<T> {
 	fn drop(&mut self) {
-		if self.state.is_locked {
+		if self.state.get().is_locked {
 			#[cfg(any(feature = "tokio", feature = "async-std"))]
 			let _ = futures::executor::block_on(self.release());
 

@@ -18,7 +18,7 @@ mod redis {
 		let client = Client::open("redis://127.0.0.1:6379/")?;
 		let driver = RedisDriver::new(&lock_name, &client);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
+		let dist_lock = DistLock::new(config, driver);
 
 		assert!(dist_lock.acquire().await?);
 		tokio::time::sleep(core::time::Duration::from_secs(5)).await;
@@ -38,7 +38,7 @@ mod redis {
 		let client = Client::open("redis://127.0.0.1:6379/")?;
 		let driver = RedisDriver::new(&lock_name, &client);
 		let config = LockConfig::new(lock_name, Duration::seconds(0), Duration::seconds(10));
-		let mut dist_lock = DistLock::new(config, driver);
+		let dist_lock = DistLock::new(config, driver);
 
 		assert!(dist_lock.acquire()?);
 		thread::sleep(core::time::Duration::from_secs(5));
