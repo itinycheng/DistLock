@@ -12,7 +12,7 @@ mod redis {
 
 	#[cfg(feature = "tokio")]
 	#[tokio::test]
-	async fn test_lock() -> LockResult<()> {
+	async fn test_tokio_lock() -> LockResult<()> {
 		let now = Instant::now();
 		let lock_name = "random_lock".to_string();
 		let client = Client::open("redis://127.0.0.1:6379/")?;

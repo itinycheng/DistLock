@@ -36,6 +36,7 @@ redis_tokio_provider = [
     "tokio",
     "futures",
     "async-trait",
+    "crossbeam-utils",
     "dist_lock_codegen/redis",
     "dist_lock_codegen/async",
 ]
@@ -45,6 +46,7 @@ redis_async_std_provider = [
     "async-std",
     "futures",
     "async-trait",
+    "crossbeam-utils",
     "dist_lock_codegen/redis",
     "dist_lock_codegen/async",
 ]

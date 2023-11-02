@@ -1,16 +1,38 @@
-use std::cell::Cell;
-
+use cfg_if::cfg_if;
 use chrono::DateTime;
 use chrono::Duration;
 use chrono::Utc;
 
 use crate::error::LockResult;
 
+cfg_if! {
+	if #[cfg(any(feature = "tokio", feature = "async-std"))] {
+		type StateCell = crossbeam_utils::atomic::AtomicCell<LockState>;
+
+		trait StateOpr {
+			fn set(&self, state: LockState);
+			fn get(&self) -> LockState;
+		}
+
+		impl StateOpr for StateCell {
+			fn set(&self, state: LockState) {
+				self.store(state);
+			}
+
+			fn get(&self) -> LockState {
+				self.load()
+			}
+		}
+	} else {
+		type StateCell = std::cell::Cell<LockState>;
+	}
+}
+
 #[derive(Debug)]
 pub struct DistLock<T: Lockable> {
 	pub(super) config: LockConfig,
 	pub(super) driver: T,
-	pub(super) state: Cell<LockState>,
+	pub(super) state: StateCell,
 	pub(super) create_at: DateTime<Utc>,
 }
 
