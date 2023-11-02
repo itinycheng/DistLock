@@ -11,7 +11,7 @@ mod redis {
 	use redis::Client;
 
 	#[cfg(feature = "tokio")]
-	#[tokio::test]
+	#[tokio::test(flavor ="multi_thread", worker_threads = 2)]
 	async fn test_tokio_lock() -> LockResult<()> {
 		let now = Instant::now();
 		let lock_name = "random_lock".to_string();

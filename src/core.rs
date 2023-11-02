@@ -174,8 +174,13 @@ impl_lockable!(async);
 impl<T: Lockable> Drop for DistLock<T> {
 	fn drop(&mut self) {
 		if self.state.get().is_locked {
-			#[cfg(any(feature = "tokio", feature = "async-std"))]
-			let _ = futures::executor::block_on(self.release());
+			#[cfg(feature = "tokio")]
+			tokio::task::block_in_place(|| {
+				let _ = tokio::runtime::Handle::current().block_on(self.release());
+			});
+
+			#[cfg(feature = "async-std")]
+			let _ = async_std::task::block_on(self.release());
 
 			#[cfg(not(any(feature = "tokio", feature = "async-std")))]
 			let _ = self.release();

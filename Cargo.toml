@@ -33,7 +33,7 @@ redis_r2d2_provider = ["redis_provider", "redis/r2d2", "r2d2", "dist_lock_codege
 redis_tokio_provider = [
     "redis/tokio-comp",
     "redis/cluster-async",
-    "tokio",
+    "tokio/rt-multi-thread",
     "futures",
     "async-trait",
     "crossbeam-utils",
