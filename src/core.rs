@@ -63,18 +63,30 @@ macro_rules! impl_dist_lock {
 			}
 
 			pub $($async)? fn acquire(&self) -> LockResult<bool> {
+				if self.state.get().check_locked(&self.config) {
+					return Ok(true);
+				}
+
 				let state = self.driver.acquire_lock(&self.config)$($await)*?;
 				self.state.set(state);
 				Ok(state.is_locked)
 			}
 
 			pub $($async)? fn release(&self) -> LockResult<()> {
+				if !self.state.get().is_locked {
+					return Ok(());
+				}
+
 				let state = self.driver.release_lock(&self.config, &self.state.get())$($await)*?;
 				self.state.set(state);
 				Ok(())
 			}
 
 			pub $($async)? fn extend(&self) -> LockResult<bool> {
+				if !self.state.get().is_locked {
+					return Ok(false);
+				}
+
 				let state = self.driver.extend_lock(&self.config)$($await)*?;
 				self.state.set(state);
 				Ok(state.is_locked)
@@ -139,8 +151,13 @@ impl LockState {
 		Self { is_locked, locked_at }
 	}
 
-	pub fn is_lock(&self) -> bool {
-		self.is_locked
+	pub fn check_locked(&self, config: &LockConfig) -> bool {
+		if self.is_locked {
+			let until = self.locked_at + config.max_lock;
+			until > Utc::now()
+		} else {
+			false
+		}
 	}
 
 	pub fn lock_time(&self) -> DateTime<Utc> {
