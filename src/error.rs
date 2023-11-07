@@ -18,9 +18,16 @@ pub enum LockError {
 	#[error("Diesel connection error: {0}")]
 	DieselConnError(#[from] diesel::result::ConnectionError),
 
+	#[cfg(feature = "zookeeper")]
+	#[error("Zookeeper error: {0}")]
+	ZkError(#[from] ::zookeeper::ZkError),
+
 	#[error("lock failed")]
 	LockFailed,
 
 	#[error("lock released")]
 	LockReleased,
+
+	#[error("invalid error: {0}")]
+	InvalidLock(String),
 }

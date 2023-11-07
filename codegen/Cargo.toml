@@ -17,4 +17,6 @@ cfg-if = "1.0.0"
 [features]
 redis = []
 diesel = []
-async=[]
+zookeeper = []
+
+async = []

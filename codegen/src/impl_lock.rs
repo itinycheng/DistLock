@@ -76,6 +76,31 @@ fn gen_lock_code(
 	}
 }
 
+#[cfg(feature = "zookeeper")]
+fn gen_lock_code(
+	name: String,
+	at_most_mills: i64,
+	at_least_mills: i64,
+	transport: Expr,
+) -> TokenStream {
+	let lock_name = Ident::new(&name, Span::call_site());
+	let acquire_expr = acquire_lock_expr(&lock_name);
+	quote! {
+	   let mut #lock_name = {
+			use ::dist_lock::core::DistLock;
+			use ::dist_lock::core::LockConfig;
+			use ::dist_lock::provider::ZookeeperDriver;
+
+			let lock_name = #name.to_string();
+
+			let driver = ZookeeperDriver::new(None, #transport)?;
+			let config = LockConfig::from_mills(lock_name, #at_least_mills, #at_most_mills);
+			DistLock::new(config, driver)
+		};
+		#acquire_expr;
+	}
+}
+
 cfg_if::cfg_if! {
 	if #[cfg(feature = "async")] {
 	   fn acquire_lock_expr(name: &Ident) -> TokenStream {

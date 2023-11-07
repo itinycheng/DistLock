@@ -22,3 +22,46 @@ mod diesel_macro {
 		Ok(conn)
 	}
 }
+
+#[cfg(feature = "zookeeper")]
+mod zk_macro {
+	use std::sync::OnceLock;
+	use std::time::Duration;
+
+	use dist_lock::error::LockResult;
+	use dist_lock_codegen::dist_lock;
+	use zookeeper::Watcher;
+	use zookeeper::ZooKeeper;
+
+	static ZK: OnceLock<ZooKeeper> = OnceLock::new();
+
+	#[test]
+	fn test_zk_lock_macro() -> LockResult<()> {
+		test_zk_macro()
+	}
+
+	#[dist_lock(
+		name = "test_zk_macro",
+		at_most = "15s",
+		at_least = "10s",
+		transport(create_zk_conn())
+	)]
+	fn test_zk_macro() -> LockResult<()> {
+		println!("test zk macro");
+		Ok(())
+	}
+
+	fn create_zk_conn<'a>() -> &'a ZooKeeper {
+		ZK.get_or_init(|| {
+			ZooKeeper::connect("127.0.0.1:2181", Duration::from_secs(60), ZkWatcher).unwrap()
+		})
+	}
+
+	struct ZkWatcher;
+
+	impl Watcher for ZkWatcher {
+		fn handle(&self, event: zookeeper::WatchedEvent) {
+			println!("{:?}", event.path);
+		}
+	}
+}
