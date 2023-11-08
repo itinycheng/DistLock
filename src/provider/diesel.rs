@@ -95,7 +95,7 @@ macro_rules! impl_lockable_diesel {
 					.bind::<BigInt, _>(lock_until.timestamp_millis())
 					.bind::<VarChar, _>(&$self.name)
 					.execute($conn)?;
-				Ok(LockState::new(false, Utc::now()))
+				Ok(LockState::unlock())
 			}
 
 			fn extend_lock(&$self, config: &LockConfig) -> LockResult<LockState> {

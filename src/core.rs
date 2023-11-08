@@ -147,6 +147,9 @@ pub struct LockState {
 }
 
 impl LockState {
+	pub const fn unlock() -> LockState {
+		Self { is_locked: false, locked_at: DateTime::<Utc>::MIN_UTC }
+	}
 	pub const fn new(is_locked: bool, locked_at: DateTime<Utc>) -> LockState {
 		Self { is_locked, locked_at }
 	}

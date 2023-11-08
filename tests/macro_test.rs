@@ -1,3 +1,5 @@
+#![feature(once_cell_try)]
+
 #[cfg(feature = "diesel_mysql")]
 mod diesel_macro {
 
@@ -44,17 +46,17 @@ mod zk_macro {
 		name = "test_zk_macro",
 		at_most = "15s",
 		at_least = "10s",
-		transport(create_zk_conn())
+		transport(create_zk_conn()?)
 	)]
 	fn test_zk_macro() -> LockResult<()> {
 		println!("test zk macro");
 		Ok(())
 	}
 
-	fn create_zk_conn<'a>() -> &'a ZooKeeper {
-		ZK.get_or_init(|| {
-			ZooKeeper::connect("127.0.0.1:2181", Duration::from_secs(60), ZkWatcher).unwrap()
-		})
+	fn create_zk_conn<'a>() -> LockResult<&'a ZooKeeper> {
+		Ok(ZK.get_or_try_init(|| {
+			ZooKeeper::connect("127.0.0.1:2181", Duration::from_secs(60), ZkWatcher)
+		})?)
 	}
 
 	struct ZkWatcher;

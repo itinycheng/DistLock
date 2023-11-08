@@ -68,7 +68,8 @@ macro_rules! impl_lockable_redis {
 				} else {
 					redis::cmd("DEL").arg(&self.key).$query_fn_name(&mut conn)$($await)*?;
 				}
-				Ok(LockState::new(false, Utc::now()))
+
+				Ok(LockState::unlock())
 			}
 
 			$($async)? fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState> {

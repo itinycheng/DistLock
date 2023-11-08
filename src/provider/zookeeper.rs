@@ -87,20 +87,18 @@ impl ZookeeperDriver<'_> {
 impl Lockable for ZookeeperDriver<'_> {
 	fn acquire_lock(&self, config: &LockConfig) -> LockResult<LockState> {
 		let path = self.path(&config.name);
-		let now = Utc::now();
-		let locked = if !self.check_locked(&path, config)? {
+		if !self.check_locked(&path, config)? {
 			if self.transport.exists(&path, false)?.is_none() {
 				self.create_zk_path(&path)?;
 			}
 
+			let now = Utc::now();
 			let data = now.timestamp_millis().to_be_bytes().to_vec();
 			let _ = self.transport.set_data(&path, data, None)?;
-			true
+			Ok(LockState::new(true, now))
 		} else {
-			false
-		};
-
-		Ok(LockState::new(locked, now))
+			Ok(LockState::unlock())
+		}
 	}
 
 	fn release_lock(&self, config: &LockConfig, state: &LockState) -> LockResult<LockState> {
@@ -114,20 +112,18 @@ impl Lockable for ZookeeperDriver<'_> {
 			if self.transport.exists(&path, false)?.is_some() {
 				self.transport.delete(&path, None)?;
 			}
-			Ok(LockState { is_locked: false, locked_at: Utc::now() })
+			Ok(LockState::unlock())
 		}
 	}
 
 	fn extend_lock(&self, config: &LockConfig) -> LockResult<LockState> {
 		let path = self.path(&config.name);
-		let extended = if self.check_locked(&path, config)? {
+		if self.check_locked(&path, config)? {
 			let data = Utc::now().timestamp_millis().to_be_bytes().to_vec();
 			let _ = self.transport.set_data(&path, data, None)?;
-			true
+			Ok(LockState::new(true, Utc::now()))
 		} else {
-			false
-		};
-
-		Ok(LockState::new(extended, Utc::now()))
+			Ok(LockState::unlock())
+		}
 	}
 }
