@@ -1,5 +1,31 @@
 #![feature(once_cell_try)]
 
+#[cfg(feature = "redis_tokio_provider")]
+mod redis_macro {
+
+	use dist_lock::error::LockResult;
+	use dist_lock_codegen::dist_lock;
+	use redis::Client;
+	use std::sync::OnceLock;
+
+	static CLIENT: OnceLock<Client> = OnceLock::new();
+
+	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+	async fn test_redis_lock_macro() -> LockResult<()> {
+		test_macro().await
+	}
+
+	#[dist_lock(name = "random_lock", at_most = "10s", at_least="6s", transport(create_redis_conn()?))]
+	pub async fn test_macro() -> LockResult<()> {
+		println!("{:?}", random_lock.state());
+		Ok(())
+	}
+
+	fn create_redis_conn<'a>() -> LockResult<&'a Client> {
+		Ok(CLIENT.get_or_try_init(|| Client::open("redis://127.0.0.1:6379/"))?)
+	}
+}
+
 #[cfg(feature = "diesel_mysql")]
 mod diesel_macro {
 
