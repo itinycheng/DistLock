@@ -21,13 +21,10 @@ fn parse(lock_args: DistLockArgs, function: ItemFn) -> Result<proc_macro2::Token
 	let fn_vis = function.vis;
 	let fn_body = function.block;
 	let fn_sig = function.sig;
-	let fn_async = fn_sig.asyncness;
-	let fn_name = fn_sig.ident;
-	let fn_generics = fn_sig.generics;
-	let fn_inputs = fn_sig.inputs;
-	let fn_output = fn_sig.output;
+	let attrs = function.attrs;
 	Ok(quote! {
-		#fn_vis #fn_async fn #fn_name #fn_generics (#fn_inputs) #fn_output{
+		#(#attrs)*
+		#fn_vis #fn_sig {
 			#dist_lock;
 			#fn_body
 		}
