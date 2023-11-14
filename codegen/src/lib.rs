@@ -9,6 +9,23 @@ use syn::Result;
 mod impl_lock;
 mod parse_args;
 
+///
+/// A macro for defining dist lock.
+///
+/// Attrs:
+/// - name: Lock name.
+/// - at_most: Max lock duration.
+/// - at_least: Min lock duration.
+/// - transport: Driver connection.
+///
+/// Usage:
+/// ```
+/// #[dist_lock(name = "random_lock", at_most = "10s", at_least="6s", transport(create_conn()?))]
+/// pub async fn test_macro() -> LockResult<()> {
+///     println!("{:?}", random_lock.state());
+///     Ok(())
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn dist_lock(head: TokenStream, body: TokenStream) -> TokenStream {
 	let lock_args = parse_macro_input!(head as DistLockArgs);

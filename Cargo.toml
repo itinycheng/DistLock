@@ -1,7 +1,7 @@
 [package]
 name = "dist_lock"
 version = "0.0.1"
-authors = ["chenglong.wang <tiny.wcl@gmail.com>"]
+authors = ["tiny.wang <tiny.wcl@gmail.com>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -25,12 +25,12 @@ r2d2 = { version = "0.8.10", optional = true }
 crossbeam-utils = { version = "0.8.16", optional = true }
 
 [features]
-default = ["zookeeper"]
+default = ["redis_common"]
 
 # redis
-redis_provider = ["redis/cluster", "dist_lock_codegen/redis"]
-redis_r2d2_provider = ["redis_provider", "redis/r2d2", "r2d2", "dist_lock_codegen/redis"]
-redis_tokio_provider = [
+redis_common = ["redis/cluster", "dist_lock_codegen/redis"]
+redis_r2d2 = ["redis_common", "redis/r2d2", "r2d2", "dist_lock_codegen/redis"]
+redis_tokio = [
     "redis/tokio-comp",
     "redis/cluster-async",
     "tokio/rt-multi-thread",
@@ -39,7 +39,7 @@ redis_tokio_provider = [
     "dist_lock_codegen/redis",
     "dist_lock_codegen/async",
 ]
-redis_async_std_provider = [
+redis_async_std = [
     "redis/async-std-comp",
     "redis/cluster-async",
     "async-std",

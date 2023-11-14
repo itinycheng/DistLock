@@ -1,6 +1,6 @@
 #![feature(once_cell_try)]
 
-#[cfg(feature = "redis_tokio_provider")]
+#[cfg(feature = "redis_tokio")]
 mod redis_macro {
 
 	use dist_lock::error::LockResult;

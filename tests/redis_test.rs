@@ -1,4 +1,5 @@
-//start a docker image: docker run -d --name my-redis -p 6379:6379 redis
+// Start a docker image: docker run -d --name my-redis -p 6379:6379 redis
+// Run test: cargo test --test redis_test -- --test-threads=1
 #[cfg(feature = "redis")]
 mod redis {
 	use std::time::Instant;
@@ -11,7 +12,7 @@ mod redis {
 	use dist_lock::provider::redis::RedisDriver;
 	use redis::Client;
 
-	#[cfg(feature = "redis_provider")]
+	#[cfg(feature = "redis_common")]
 	#[test]
 	fn test_lock() -> LockResult<()> {
 		let lock_name = "random_lock".to_string();
@@ -22,7 +23,7 @@ mod redis {
 		check_lock(&dist_lock)
 	}
 
-	#[cfg(feature = "redis_r2d2_provider")]
+	#[cfg(feature = "redis_r2d2")]
 	#[test]
 	fn test_t2d2_lock() -> LockResult<()> {
 		let client = Client::open("redis://127.0.0.1:6379/")?;
@@ -34,7 +35,7 @@ mod redis {
 		check_lock(&dist_lock)
 	}
 
-	#[cfg(feature = "redis_tokio_provider")]
+	#[cfg(feature = "redis_tokio")]
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_tokio_lock() -> LockResult<()> {
 		let lock_name = "random_lock".to_string();
@@ -45,7 +46,7 @@ mod redis {
 		check_lock(&dist_lock).await
 	}
 
-	#[cfg(feature = "redis_async_std_provider")]
+	#[cfg(feature = "redis_async_std")]
 	#[async_std::test]
 	async fn test_async_std_lock() -> LockResult<()> {
 		let lock_name = "random_lock".to_string();
