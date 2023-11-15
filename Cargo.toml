@@ -1,20 +1,37 @@
 [package]
 name = "dist_lock"
-version = "0.0.1"
-authors = ["tiny.wang <tiny.wcl@gmail.com>"]
-edition = "2021"
+description = "Distributed lock"
+exclude = ["tests/"]
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
 members = [".", "codegen"]
 
+[workspace.package]
+version = "0.0.1"
+authors = ["tiny.wang <tiny.wcl@gmail.com>"]
+license = "MIT"
+homepage = "https://github.com/itinycheng/DistLock"
+repository = "https://github.com/itinycheng/DistLock"
+readme = "README.md"
+keywords = ["distributed", "lock"]
+edition = "2021"
+
 [dependencies]
 chrono = "0.4.26"
 thiserror = "1.0.44"
 gethostname = "0.4.3"
 cfg-if = "1.0.0"
-dist_lock_codegen = { path = "./codegen", version = "*", optional = true }
+dist_lock_codegen = { path = "./codegen", version = "0.0.1", default-features = false, optional = true }
 redis = { version = "0.23.0", optional = true }
 diesel = { version = "2.1.0", features = ["chrono"], optional = true }
 zookeeper = { version = "0.8.0", optional = true }
